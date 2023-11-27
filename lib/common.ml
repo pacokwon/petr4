@@ -242,19 +242,19 @@ module MakeDriver (IO: DriverIO) = struct
   let run_compiler (cfg: Pass.compiler_cfg) =
     run_checker cfg.cfg_checker
     >>= to_p4cub cfg
-    >>= to_p4flat cfg
-    >>= print_p4flat cfg
     >>= begin fun prog ->
         match cfg.cfg_backend with
         | Skip -> Ok ()
         | Run (GCLBackend {depth; gcl_output}) ->
-           to_gcl depth prog
-           >>= print_gcl gcl_output
-           >>= fun x -> Ok ()
+          to_p4flat cfg prog
+          >>= print_p4flat cfg
+          >>= to_gcl depth
+          >>= print_gcl gcl_output
+          >>= fun x -> Ok ()
         | Run (CBackend {depth; c_output}) ->
-           to_cimpl prog
-           >>= print_cimpl c_output
-           >>= fun x -> Ok ()
+          to_cimpl prog
+          >>= print_cimpl c_output
+          >>= fun x -> Ok ()
         end
 
   let run_interpreter (cfg: Pass.interpreter_cfg) =

@@ -1,7 +1,7 @@
 #include <core.p4>
 #include <v1model.p4>
 
-struct metadata { }
+struct metadata { bool ok; }
 struct headers { }
 
 parser MyParser(packet_in packet,
@@ -13,7 +13,7 @@ parser MyParser(packet_in packet,
     }
 }
 
-control MyChecksum(inout headers hdr, inout metadata meta) {
+control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
     apply { }
 }
 
@@ -31,6 +31,10 @@ control MyEgress(inout headers hdr,
     apply { }
 }
 
+control MyUpdateChecksum(inout headers hdr, inout metadata meta) {
+    apply { }
+}
+
 control MyDeparser(packet_out packet, in headers hdr) {
     apply { }
 }
@@ -38,10 +42,10 @@ control MyDeparser(packet_out packet, in headers hdr) {
 //this is declaration
 V1Switch(
     MyParser(),
-    MyChecksum(),
+    MyVerifyChecksum(),
     MyIngress(),
     MyEgress(),
-    MyChecksum(),
+    MyUpdateChecksum(),
     MyDeparser()
     )
 main;

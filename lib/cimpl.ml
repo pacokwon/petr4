@@ -1,6 +1,12 @@
 type ctyp =
   | CTVoid
+  | CTChar
   | CTInt
+  | CTUInt
+  | CTLInt
+  | CTULInt
+  | CTArray of ctyp
+  | CTStruct of string
 
 type cvar = string
 
@@ -24,20 +30,25 @@ type uop =
 
 type cexpr =
   | CEVar of cvar
+  | CEBool of bool
   | CEInt of int
+  | CEMember of cexpr * string
   | CECompExpr of bop * cexpr * cexpr
   | CEUniExpr of uop * cexpr
 
 type cstmt =
   | CSSkip
-  | CSAssign of cvar * cexpr
-  | CSIf of cexpr * cstmt list * cstmt list
+  | CSAssign of cexpr * cexpr
+  | CSIf of cexpr * cblk * cblk
+  | CSCall of cvar * cexpr list
 
-and cblk =
-  | CKBlock of cstmt list
-               
+and cblk = cstmt list
+
+type cparam = ctyp * string
+
 type cdecl =
-  | CDFunction of ctyp * string * cblk
+  | CDStruct of string * (ctyp * string) list
+  | CDFunction of ctyp * string * cparam list * cblk
                  
 type cprog =
   | CProgram of cdecl list 

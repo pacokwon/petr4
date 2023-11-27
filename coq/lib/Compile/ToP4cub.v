@@ -1796,8 +1796,8 @@ Section ToP4cub.
           translate_parser_states
             term_names local_ctx states in
         let*~ cub_start :=
-          start_opt else
-    "could not find a starting state for the parser" in
+          start_opt
+        else "could not find a starting state for the parser" in
         let d :=
           Top.Parser
             cub_name cub_cparams cub_expr_cparams cub_eparams
@@ -1835,64 +1835,64 @@ Section ToP4cub.
            should be [ctx] not [local_ctx]
            b/c actions and tables will leak out. *)
         add_control ctx d
-| DeclFunction _ ret {| P4String.str := name |} type_params params body =>
-    let typ_names := List.map P4String.str type_params in
-    let* (_,params) := parameters_to_params typ_names params in
-    let* ret :=
-      match ret with
-      | TypVoid => ok None
-      | _ => translate_exp_type typ_names ret >>| Some
-      end in
-    let names_io : InOut.t string string := InOut.map fst fst params in
-    let names := (InOut.inn names_io ++ InOut.out names_io)%list in
-    let+ body := translate_block typ_names names ctx body in
-    add_function
-      ctx
-      (Top.Funct
-         name (List.length typ_names)
-         {| Arr.inout:=params; Arr.ret:=ret |} body)
-  | DeclExternFunction tags ret {| P4String.str:=name |} type_params parameters =>
-      let typ_names := List.map P4String.str type_params in
-      let* cub_ret :=
-        translate_return_type typ_names ret in
-      let* (eparams, _, params) :=
-        translate_runtime_params typ_names parameters in
-      let arrowtype := {|Arr.inout:=params; Arr.ret:=cub_ret|} in
-      let method := (name, (List.length type_params, List.map snd eparams, arrowtype)) in
-      (* TODO come up with better naming scheme for externs *)
-      let d := Top.Extern "_" 0 [] [] [method] in
-      ok (add_extern ctx d)
-  | DeclVariable _ typ {| P4String.str := x  |} None =>
-      let+ t := translate_exp_type [] typ in
-      add_variable ctx (Ctrl.Var x (inl t))
-    | DeclVariable _ typ {| P4String.str := x |}  (Some e) =>
-        let* t := translate_exp_type [] typ in
-        let+ e := translate_expression [] term_names e in
-        add_variable ctx (Ctrl.Var x (inr e))
-    | DeclValueSet tags typ size name =>
-        (* error "[FIXME] Value Set declarations unimplemented" *)
-        ok ctx
-    | DeclAction tags name data_params ctrl_params body =>
-        (* TODO High prio *)
-        let cub_name := P4String.str name in
-        let* (ctrl_params, _) :=
-          parameters_to_params
-            [] ctrl_params in
-        let* (_,data_params) :=
-          (* TODO: perhaps translate_decl
-             needs to pass a [typ_names]
-             parameter? *)
-          parameters_to_params [] data_params in
-        let term_names :=
-          (List.map fst ctrl_params ++ List.map fst $ ctrl_params ++ List.map fst $ InOut.concat data_params ++ term_names)%list in
-        let+ cub_body :=
-          translate_block
-            [] term_names 
-            ctx body in
-        let a :=
-          Ctrl.Action
-            cub_name ctrl_params data_params cub_body in
-        add_action ctx a
+    | DeclFunction _ ret {| P4String.str := name |} type_params params body =>
+        let typ_names := List.map P4String.str type_params in
+        let* (_,params) := parameters_to_params typ_names params in
+        let* ret :=
+          match ret with
+          | TypVoid => ok None
+          | _ => translate_exp_type typ_names ret >>| Some
+          end in
+        let names_io : InOut.t string string := InOut.map fst fst params in
+        let names := (InOut.inn names_io ++ InOut.out names_io)%list in
+        let+ body := translate_block typ_names names ctx body in
+        add_function
+          ctx
+          (Top.Funct
+             name (List.length typ_names)
+             {| Arr.inout:=params; Arr.ret:=ret |} body)
+   | DeclExternFunction tags ret {| P4String.str:=name |} type_params parameters =>
+       let typ_names := List.map P4String.str type_params in
+       let* cub_ret :=
+         translate_return_type typ_names ret in
+       let* (eparams, _, params) :=
+         translate_runtime_params typ_names parameters in
+       let arrowtype := {|Arr.inout:=params; Arr.ret:=cub_ret|} in
+       let method := (name, (List.length type_params, List.map snd eparams, arrowtype)) in
+       (* TODO come up with better naming scheme for externs *)
+       let d := Top.Extern "_" 0 [] [] [method] in
+       ok (add_extern ctx d)
+   | DeclVariable _ typ {| P4String.str := x  |} None =>
+       let+ t := translate_exp_type [] typ in
+       add_variable ctx (Ctrl.Var x (inl t))
+   | DeclVariable _ typ {| P4String.str := x |}  (Some e) =>
+       let* t := translate_exp_type [] typ in
+       let+ e := translate_expression [] term_names e in
+       add_variable ctx (Ctrl.Var x (inr e))
+   | DeclValueSet tags typ size name =>
+       (* error "[FIXME] Value Set declarations unimplemented" *)
+       ok ctx
+   | DeclAction tags name data_params ctrl_params body =>
+       (* TODO High prio *)
+       let cub_name := P4String.str name in
+       let* (ctrl_params, _) :=
+         parameters_to_params
+           [] ctrl_params in
+       let* (_,data_params) :=
+         (* TODO: perhaps translate_decl
+            needs to pass a [typ_names]
+            parameter? *)
+         parameters_to_params [] data_params in
+       let term_names :=
+         (List.map fst ctrl_params ++ List.map fst $ ctrl_params ++ List.map fst $ InOut.concat data_params ++ term_names)%list in
+       let+ cub_body :=
+         translate_block
+           [] term_names 
+           ctx body in
+       let a :=
+         Ctrl.Action
+           cub_name ctrl_params data_params cub_body in
+       add_action ctx a
     | DeclTable
         tags name keys actions entries
         default_action size custom_properties =>
@@ -1944,27 +1944,27 @@ Section ToP4cub.
         add_type ctx (P4String.str name) typ
     | DeclTypeDef tags name (inr typ) =>
         (* [FIXME] what to do here? *)
-        ok ctx
+        error "Unhandled DeclTypedef"
     | DeclNewType tags name typ_or_decl =>
         (* error "[FIXME] Newtypes unimplemented" *)
-        ok ctx
+        error "Unhandled DeclNewType"
     | DeclControlType tags name type_params params =>
         (* error "[FIXME] ControlType declarations unimplemented" *)
         ok ctx
     | DeclParserType tags name type_params params =>
         (* error "[FIXME] ParserType declarations unimplemented" *)
         ok ctx
-| DeclPackageType tags name type_params parameters =>
-    let cub_name := P4String.str name in
-    let cub_type_params :=
-      List.map (@P4String.str tags_t) type_params in
-    let+ (cub_cparams,cub_expr_cparams) :=
-      translate_to_constructor_params cub_type_params parameters in
-    (* error "[FIXME] P4light inlining step necessary" *)
-    let p :=
-      (cub_name, (cub_cparams, List.map snd cub_expr_cparams)) in
-    add_package_type ctx p
-    end.
+    | DeclPackageType tags name type_params parameters =>
+        let cub_name := P4String.str name in
+        let cub_type_params :=
+          List.map (@P4String.str tags_t) type_params in
+        let+ (cub_cparams,cub_expr_cparams) :=
+          translate_to_constructor_params cub_type_params parameters in
+        (* error "[FIXME] P4light inlining step necessary" *)
+        let p :=
+          (cub_name, (cub_cparams, List.map snd cub_expr_cparams)) in
+        add_package_type ctx p
+  end.
 
   Fixpoint inline_types_decls (decls : list Declaration) : result string (list Declaration) :=
     match decls with
