@@ -25,15 +25,6 @@ Section Queue.
     | nonempty_queue (v :: _) _ _ => Some v
     end.
 
-  Fixpoint rev_aux (l: list A) (result: list A): list A :=
-    match l with
-    | [] => result
-    | v :: rest => rev_aux rest (v :: result)
-    end.
-
-  (** A faster implementation of rev *)
-  Definition rev' (l: list A) : list A := rev_aux l [].
-
   Definition deque (que: queue): queue :=
     match que with
     | empty_queue => empty_queue
@@ -110,14 +101,8 @@ Section Queue.
     - destruct H as [l H]. rewrite queue_front, H. reflexivity.
   Qed.
 
-  Lemma rev_aux_inv: forall l1 l2, rev_aux l1 l2 = rev l1 ++ l2.
-  Proof.
-    induction l1; intros; simpl; auto.
-    rewrite IHl1. rewrite <- app_assoc. simpl. reflexivity.
-  Qed.
-
-  Lemma rev'_eq: forall l, rev' l = rev l.
-  Proof. intros. unfold rev'. rewrite rev_aux_inv, app_nil_r. reflexivity. Qed.
+  Lemma rev'_eq: forall {A} (l: list A), rev' l = rev l.
+  Proof. intros. unfold rev'. rewrite rev_alt. reflexivity. Qed.
 
   Lemma enque_eq: forall q x, list_rep (enque x q) = list_rep q ++ [x].
   Proof.
