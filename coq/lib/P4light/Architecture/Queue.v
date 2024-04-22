@@ -161,6 +161,58 @@ Section Queue.
     - subst. simpl. reflexivity.
   Qed.
 
+  Lemma concat_queue_eq_empty: forall q1 q2,
+      concat_queue q1 q2 = empty_queue -> q1 = empty_queue /\ q2 = empty_queue.
+  Proof.
+    intros. destruct q1, q2. 1: split; reflexivity.
+    all: simpl in H; inversion H.
+  Qed.
+
+  Lemma empty_queue_dec: forall q, {q = empty_queue} + {q <> empty_queue}.
+  Proof. intros. destruct q; [left; reflexivity | right; discriminate]. Qed.
+
+  Lemma enque_eq_concat: forall p ps q1 q2,
+      enque p ps = concat_queue q1 q2 -> q2 <> empty_queue -> exists q3, ps = concat_queue q1 q3.
+  Proof.
+    intros. revert dependent p. revert ps q1. destruct q2. 1: contradiction.
+    clear H0. intros. destruct q1; simpl in *.
+    - exists ps. reflexivity.
+    - destruct l, l0; simpl in *; rewrite ?app_nil_r in *.
+      + exists empty_queue. destruct ps; simpl in H; inversion H. reflexivity.
+      + exists (nonempty_queue [] a l0). simpl. destruct ps; simpl in H; inversion H. reflexivity.
+      + rewrite rev'_eq in H. assert (a1 :: l <> []) by discriminate.
+        destruct (exists_last H0) as [l' [a' ?]]. rewrite e, rev_unit in H.
+        exists (nonempty_queue l' a' []). rewrite rev'_eq. simpl in *.
+        destruct ps; simpl in H; inversion H. reflexivity.
+      + exists (nonempty_queue (a1 :: l) a l0). destruct ps; simpl in H; inversion H. reflexivity.
+  Qed.
+
+  Lemma concat_queue_empty: forall q, concat_queue q empty_queue = q.
+  Proof. destruct q; simpl; reflexivity. Qed.
+
+  Lemma enque_eq_concat_same_prefix: forall p ps q,
+      enque p ps = concat_queue ps q -> q = enque p empty_queue.
+  Proof.
+    intros. destruct ps; simpl in *; auto. destruct q; inversion H.
+    - assert (length (p :: l0) = length l0) by (rewrite H1; reflexivity). simpl in H0. lia.
+    - assert (length (p :: l0) = length (l2 ++ a0 :: rev' l1 ++ l0)) by
+        (rewrite H1; reflexivity). rewrite app_length in H0. simpl in H0.
+      rewrite rev'_eq, app_length, rev_length in H0.
+      assert (length l2 = O) by lia. assert (length l1 = O) by lia.
+      rewrite length_zero_iff_nil in H2, H3. subst. simpl in H1. inversion H1. reflexivity.
+  Qed.
+
+  Lemma concat_queue_assoc: forall q1 q2 q3,
+      concat_queue (concat_queue q1 q2) q3 = concat_queue q1 (concat_queue q2 q3).
+  Proof.
+    intros. destruct q1, q2, q3; simpl; try reflexivity.
+    rewrite !app_comm_cons, <- !app_assoc. reflexivity.
+  Qed.
+
+  Lemma enque_concat_queue: forall p q1 q2,
+      enque p (concat_queue q1 q2) = concat_queue q1 (enque p q2).
+  Proof. intros. destruct q1, q2; simpl; reflexivity. Qed.
+
 End Queue.
 
 (** Test Begin
