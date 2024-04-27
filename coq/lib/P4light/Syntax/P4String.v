@@ -76,7 +76,7 @@ Section AList.
       destruct (StrEqDec x y) as [Hxy' | Hxy'];
       unfold "=/=", "===" in *; subst; try contradiction; auto.
   Qed.
-  
+
   Lemma key_unique_clear_AList_tags : forall vs,
       AList.key_unique (clear_AList_tags vs) = AList.key_unique vs.
   Proof.
@@ -98,4 +98,15 @@ Proof.
   unfold clear_AList_tags, AListUtil.map_values.
   repeat rewrite ForallMap.map_pat_both.
   do 2 rewrite map_map; reflexivity.
+Qed.
+
+Lemma clear_AList_tags_forallb_snd:
+    forall {tags_t U: Type} (f : U -> bool)
+      (us : AList.AList (t tags_t) U (@equiv tags_t)),
+      forallb (Basics.compose f snd) us =
+        forallb (Basics.compose f snd) (clear_AList_tags us).
+Proof.
+  intros tags U f. induction us; simpl; auto.
+  rewrite IHus. f_equal. destruct a as [n v].
+  unfold Basics.compose. simpl. reflexivity.
 Qed.
