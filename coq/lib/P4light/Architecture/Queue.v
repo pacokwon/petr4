@@ -56,16 +56,7 @@ Section Queue.
     | nonempty_queue front _ rear => Zlength front + Zlength rear + 1
     end.
 
-  Definition concat_queue (q1 q2: queue): queue :=
-    match q1 with
-    | empty_queue => q2
-    | nonempty_queue front1 mid1 rear1 =>
-        match q2 with
-        | empty_queue => q1
-        | nonempty_queue front2 mid2 rear2 =>
-            nonempty_queue front1 mid1 (rear2 ++ mid2 :: rev' front2 ++ rear1)
-        end
-    end.
+  Definition concat_queue (q1 q2: queue): queue := list_enque (list_rep q2) q1.
 
   Lemma empty_queue_rep_nil: list_rep empty_queue = [].
   Proof. reflexivity. Qed.
@@ -144,10 +135,11 @@ Section Queue.
 
   Lemma concat_queue_eq: forall q1 q2, list_rep (concat_queue q1 q2) = list_rep q1 ++ list_rep q2.
   Proof.
-    intros. destruct q1 as [|f1 m1 r1]; destruct q2 as [|f2 m2 r2]; simpl; auto.
+    intros. unfold concat_queue.
+    destruct q1 as [|f1 m1 r1]; destruct q2 as [|f2 m2 r2]; simpl; auto.
+    - rewrite list_enque_eq. simpl. reflexivity.
     - rewrite app_nil_r. reflexivity.
-    - rewrite !rev'_eq, rev_app_distr. simpl. rewrite rev_app_distr, rev_involutive.
-      rewrite <- !app_assoc, <- !app_comm_cons. simpl. reflexivity.
+    - rewrite list_enque_eq. simpl. reflexivity.
   Qed.
 
   Lemma qlength_concat: forall q1 q2, qlength (concat_queue q1 q2) = qlength q1 + qlength q2.
@@ -161,30 +153,56 @@ Section Queue.
     - subst. simpl. reflexivity.
   Qed.
 
+  Lemma list_enque_not_empty1: forall l q, q <> empty_queue -> list_enque l q <> empty_queue.
+  Proof.
+    induction l; intros.
+    - destruct q. 1: contradiction. simpl. discriminate.
+    - simpl. unfold Basics.flip. apply IHl. destruct q; simpl; discriminate.
+  Qed.
+
+  Lemma list_enque_not_empty2: forall l q, l <> [] -> list_enque l q <> empty_queue.
+  Proof.
+    intros. destruct l. 1: contradiction. simpl. unfold Basics.flip.
+    apply list_enque_not_empty1. destruct q; simpl; discriminate.
+  Qed.
+
   Lemma concat_queue_eq_empty: forall q1 q2,
       concat_queue q1 q2 = empty_queue -> q1 = empty_queue /\ q2 = empty_queue.
   Proof.
-    intros. destruct q1, q2. 1: split; reflexivity.
-    all: simpl in H; inversion H.
+    unfold concat_queue. intros. destruct q1, q2.
+    - split; reflexivity.
+    - simpl in H. exfalso. revert H. apply list_enque_not_empty2.
+      destruct l; simpl; discriminate.
+    - simpl in H. inversion H.
+    - simpl in H. exfalso. revert H. apply list_enque_not_empty1. discriminate.
   Qed.
 
   Lemma empty_queue_dec: forall q, {q = empty_queue} + {q <> empty_queue}.
   Proof. intros. destruct q; [left; reflexivity | right; discriminate]. Qed.
 
+  Lemma list_enque_app: forall l1 l2 q, list_enque (l1 ++ l2) q = list_enque l2 (list_enque l1 q).
+  Proof. intros. unfold list_enque. rewrite fold_left_app. reflexivity. Qed.
+
+  Lemma enque_eq_inv: forall e1 e2 q1 q2, enque e1 q1 = enque e2 q2 -> e1 = e2 /\ q1 = q2.
+  Proof. intros. destruct q1, q2; simpl in H; inversion H; split; auto. Qed.
+
   Lemma enque_eq_concat: forall p ps q1 q2,
       enque p ps = concat_queue q1 q2 -> q2 <> empty_queue -> exists q3, ps = concat_queue q1 q3.
   Proof.
     intros. revert dependent p. revert ps q1. destruct q2. 1: contradiction.
-    clear H0. intros. destruct q1; simpl in *.
-    - exists ps. reflexivity.
-    - destruct l, l0; simpl in *; rewrite ?app_nil_r in *.
-      + exists empty_queue. destruct ps; simpl in H; inversion H. reflexivity.
-      + exists (nonempty_queue [] a l0). simpl. destruct ps; simpl in H; inversion H. reflexivity.
-      + rewrite rev'_eq in H. assert (a1 :: l <> []) by discriminate.
-        destruct (exists_last H0) as [l' [a' ?]]. rewrite e, rev_unit in H.
-        exists (nonempty_queue l' a' []). rewrite rev'_eq. simpl in *.
-        destruct ps; simpl in H; inversion H. reflexivity.
-      + exists (nonempty_queue (a1 :: l) a l0). destruct ps; simpl in H; inversion H. reflexivity.
+    clear H0. unfold concat_queue; intros. simpl in *.
+    destruct l, l0; simpl in *; unfold Basics.flip in H; rewrite ?rev'_eq in *; simpl in *.
+    - exists empty_queue. apply enque_eq_inv in H. destruct H. simpl. assumption.
+    - exists (nonempty_queue [] a l0). simpl. unfold Basics.flip. rewrite rev'_eq.
+      rewrite list_enque_app in H. simpl in H. unfold Basics.flip in H.
+      apply enque_eq_inv in H. destruct H. assumption.
+    - rewrite list_enque_app in H. simpl in H. unfold Basics.flip in H.
+      apply enque_eq_inv in H. destruct H. exists (nonempty_queue [] a0 (rev l)). simpl.
+      unfold Basics.flip. rewrite rev'_eq, rev_involutive. assumption.
+    - rewrite app_comm_cons, app_assoc, list_enque_app in H. simpl in H.
+      unfold Basics.flip in H. apply enque_eq_inv in H. destruct H.
+      exists (nonempty_queue (a0 :: l) a l0). simpl. unfold Basics.flip. rewrite rev'_eq.
+      assumption.
   Qed.
 
   Lemma concat_queue_empty: forall q, concat_queue q empty_queue = q.
@@ -193,25 +211,35 @@ Section Queue.
   Lemma enque_eq_concat_same_prefix: forall p ps q,
       enque p ps = concat_queue ps q -> q = enque p empty_queue.
   Proof.
-    intros. destruct ps; simpl in *; auto. destruct q; inversion H.
-    - assert (length (p :: l0) = length l0) by (rewrite H1; reflexivity). simpl in H0. lia.
-    - assert (length (p :: l0) = length (l2 ++ a0 :: rev' l1 ++ l0)) by
-        (rewrite H1; reflexivity). rewrite app_length in H0. simpl in H0.
-      rewrite rev'_eq, app_length, rev_length in H0.
-      assert (length l2 = O) by lia. assert (length l1 = O) by lia.
-      rewrite length_zero_iff_nil in H2, H3. subst. simpl in H1. inversion H1. reflexivity.
+    intros. pose proof (qlength_concat ps q). pose proof (qlength_enque p ps).
+    rewrite H, H0 in H1. assert (qlength q = 1) by lia. clear H0 H1.
+    unfold concat_queue in H. destruct q; simpl in *. 1: discriminate.
+    pose proof (Zlength_nonneg l). pose proof (Zlength_nonneg l0).
+    assert (Zlength l = 0) by lia. assert (Zlength l0 = 0) by lia.
+    apply Zlength_nil_inv in H3, H4. subst. rewrite rev'_eq in H. simpl in H.
+    unfold Basics.flip in H. apply enque_eq_inv in H. destruct H. subst. reflexivity.
   Qed.
 
   Lemma concat_queue_assoc: forall q1 q2 q3,
       concat_queue (concat_queue q1 q2) q3 = concat_queue q1 (concat_queue q2 q3).
   Proof.
-    intros. destruct q1, q2, q3; simpl; try reflexivity.
-    rewrite !app_comm_cons, <- !app_assoc. reflexivity.
+    intros. unfold concat_queue. rewrite list_enque_eq, <- list_enque_app. reflexivity.
   Qed.
 
   Lemma enque_concat_queue: forall p q1 q2,
       enque p (concat_queue q1 q2) = concat_queue q1 (enque p q2).
-  Proof. intros. destruct q1, q2; simpl; reflexivity. Qed.
+  Proof.
+    intros. unfold concat_queue. rewrite enque_eq, list_enque_app. simpl.
+    unfold Basics.flip. reflexivity.
+  Qed.
+
+  Lemma list_enque_nonempty: forall l fr mid rear,
+      list_enque l (nonempty_queue fr mid rear) =
+        nonempty_queue fr mid (rev l ++ rear).
+  Proof.
+    induction l; intros; simpl; auto. unfold Basics.flip. simpl. rewrite IHl.
+    rewrite <- app_assoc. reflexivity.
+  Qed.
 
 End Queue.
 
