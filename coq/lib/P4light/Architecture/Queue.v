@@ -58,6 +58,31 @@ Section Queue.
 
   Definition concat_queue (q1 q2: queue): queue := list_enque (list_rep q2) q1.
 
+  Inductive Sublist: list A -> list A -> Prop :=
+  | SubNil: forall l, Sublist nil l
+  | SubAbsent: forall x l1 l2, Sublist l1 l2 -> Sublist l1 (x :: l2)
+  | SubCons: forall x l1 l2, Sublist l1 l2 -> Sublist (x :: l1) (x :: l2).
+
+  Lemma Sublist_incl: forall l1 l2, Sublist l1 l2 -> incl l1 l2.
+  Proof.
+    intros. induction H.
+    - apply incl_nil.
+    - apply incl_tl. assumption.
+    - apply incl_cons.
+      + simpl. left. reflexivity.
+      + apply incl_tl. assumption.
+  Qed.
+
+  Lemma Sublist_refl: forall l, Sublist l l.
+  Proof.
+    intros l. induction l. constructor.
+    apply SubCons. assumption.
+  Qed.
+
+  Definition SubQueue (q1 q2: queue) := Sublist (list_rep q1) (list_rep q2).
+
+  Lemma SubQueue_refl: forall q, SubQueue q q. Proof. intros. apply Sublist_refl. Qed.
+
   Lemma empty_queue_rep_nil: list_rep empty_queue = [].
   Proof. reflexivity. Qed.
 
@@ -91,6 +116,9 @@ Section Queue.
       + exists (front ++ mid :: rev' rear). reflexivity.
     - destruct H as [l H]. rewrite queue_front, H. reflexivity.
   Qed.
+
+  Lemma enque_not_eq_empty: forall x q, enque x q <> empty_queue.
+  Proof. intros. destruct q; simpl; discriminate. Qed.
 
   Lemma rev'_eq: forall {A} (l: list A), rev' l = rev l.
   Proof. intros. unfold rev'. rewrite rev_alt. reflexivity. Qed.
@@ -269,3 +297,23 @@ Proof.
   intros. destruct que; simpl; auto. rewrite !rev'_eq, map_app. simpl.
   rewrite map_rev. reflexivity.
 Qed.
+
+(* Goal Sublist [1; 3] [1; 2; 3]. *)
+(* Proof. *)
+(*   do 4 econstructor. *)
+(* Qed. *)
+
+(* Goal Sublist [1; 2] [1; 2; 3]. *)
+(* Proof. *)
+(*   do 4 econstructor. *)
+(* Qed. *)
+
+(* Goal Sublist [2] [1; 2; 3]. *)
+(* Proof. *)
+(*   do 4 econstructor. *)
+(* Qed. *)
+
+(* Goal ~ Sublist [1; 2] [2; 1]. *)
+(* Proof. *)
+(*   intro H. inversion_clear H. inversion_clear H0; inversion_clear H. *)
+(* Qed. *)
