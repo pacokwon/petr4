@@ -315,7 +315,7 @@ Section Transformer.
     match pc with
     | MkParserCase tags matches next =>
       let matches' := map (transform_match e) matches in
-      MkParserCase tags matches next
+      MkParserCase tags matches' next
     end.
 
   Definition transform_psrtrans (e: env) (pt: @ParserTransition tags_t): @ParserTransition tags_t :=
