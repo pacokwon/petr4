@@ -5,7 +5,7 @@ Require Import Poulet4.Utils.Util.FunUtil.
 Require Import Poulet4.Utils.AList.
 Require Export Poulet4.P4light.Architecture.Queue.
 
-Section TRAFFIC_MANAGER.
+Section REPLICATION_ENGINE.
 
   Variable Port: Type.
   Variable Header: Type.
@@ -108,7 +108,7 @@ Section TRAFFIC_MANAGER.
                       header)
     end.
 
-  Definition traffic_manager
+  Definition replication_engine
     (mc_tbl: multicast_table)
     (excl_table: L2_exclusion_table)
     (input: IngressPacketDescriptor):
@@ -149,11 +149,11 @@ Section TRAFFIC_MANAGER.
       change h with (snd (i, h)); eapply packet_replication_output_snd; eauto.
   Qed.
 
-  Lemma traffic_manager_output_snd: forall mc_tbl excl_table input output,
-      In output (list_rep (traffic_manager mc_tbl excl_table input)) ->
+  Lemma replication_engine_output_snd: forall mc_tbl excl_table input output,
+      In output (list_rep (replication_engine mc_tbl excl_table input)) ->
       snd output = snd input.
   Proof.
-    intros. unfold traffic_manager in H. destruct (unicast_engine input) eqn:?.
+    intros. unfold replication_engine in H. destruct (unicast_engine input) eqn:?.
     - rewrite enque_eq, in_app_iff in H. destruct H.
       + apply multicast_engine_output_snd in H. assumption.
       + simpl in H. destruct H; try contradiction. subst e. unfold unicast_engine in Heqo.
@@ -162,10 +162,10 @@ Section TRAFFIC_MANAGER.
     - apply multicast_engine_output_snd in H. assumption.
   Qed.
 
-End TRAFFIC_MANAGER.
+End REPLICATION_ENGINE.
 
 Arguments Build_MulticastLevel1Node {_}.
 Arguments Build_InputMetadata {_}.
-Arguments traffic_manager {_ _ _}.
+Arguments replication_engine {_ _ _}.
 Arguments out_meta_egress_port {_}.
 Arguments out_meta_egress_rid {_}.
