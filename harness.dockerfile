@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-ENV PETR4_DEPS pkg-config \
+ENV PETR4_DEPS="pkg-config \
                sudo \
                git \
                m4 \
@@ -9,7 +9,7 @@ ENV PETR4_DEPS pkg-config \
                opam \
                ca-certificates \
                curl \
-               unzip
+               unzip"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
