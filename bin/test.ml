@@ -48,7 +48,18 @@ let excl stf_tests_dir =
       (fun () -> Alcotest.(check bool) p4_file true true)))
 
 let () =
-  ["p4c stf tests", main ["examples/"] "./examples/checker_tests/good/";
-   "petr4 stf tests", main ["examples/"] "./p4stf/custom-stf-tests/";
-   "excluded tests", excl "./examples/checker_tests/excluded/good/"]
-  |> Alcotest.run "Stf-tests"
+  let argv = Sys.get_argv () in
+  let testdirs =
+    if Array.length argv > 1 then
+      Array.sub argv ~pos:1 ~len:(Array.length argv - 1)
+      |> Array.to_list
+    else begin
+      print_endline "No argument supplied. Running tests in ./examples/checker_tests/good/";
+      ["./examples/checker_tests/good/"]
+    end
+  in
+  let test_suite =
+    List.map ~f:(fun testdir -> ("", main ["examples/"] testdir)) testdirs
+  in
+  test_suite
+  |> Alcotest.run ~argv:[| "test" |] "Stf-tests"
