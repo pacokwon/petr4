@@ -49,11 +49,17 @@ test-stf:
 test:
 	cd test && dune exec -- ./test.exe
 
-sim:
-	dune exec bin/test.exe
+sim-v1model:
+	dune exec bin/test.exe -- testdata/v1model-tests
 
-typecheck:
-	dune exec test/test.exe
+sim-ebpf:
+	dune exec bin/test.exe -- testdata/ebpf-tests
+
+pos:
+	dune exec test/test.exe -- pos
+
+neg:
+	dune exec test/test.exe -- neg
 
 clean:
 	dune clean

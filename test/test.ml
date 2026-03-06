@@ -131,21 +131,35 @@ let bad_test f file () =
     (f ["./examples"] (Filename.concat "./testdata/p4_16_errors" file))
 
 let excl_test file () =
-  Alcotest.(check bool) "good test" true true
+  Alcotest.(check bool) "good test" true false
 
 let example_path l =
   let root = Filename.concat ".." "examples" in
   List.fold_left l ~init:root ~f:Filename.concat
 
 let () = 
-  (let open Alcotest in
-   run "Tests" [
-     "Excluded Positive Typecheck Tests", (Stdlib.List.map (fun name ->
-         test_case name `Quick (excl_test name)) excluded_good_files);
-     "Excluded Negative Typecheck Tests", (Stdlib.List.map (fun name ->
-         test_case name `Quick (excl_test name)) excluded_bad_files);
-     "Positive Typecheck Tests", (Stdlib.List.map (fun name ->
-         test_case name `Quick (good_test typecheck_test name)) good_files); 
-     "Negative Typecheck Tests", (Stdlib.List.map (fun name ->
-         test_case name `Quick (bad_test typecheck_test name)) bad_files); 
-   ])
+  let open Alcotest in
+  let argv = Sys.get_argv () in
+  let tests =
+    if Array.length argv = 2 then begin
+        if String.equal argv.(1) "pos" then
+          [
+            "Excluded Positive Typecheck Tests", (Stdlib.List.map (fun name ->
+              test_case name `Quick (excl_test name)) excluded_good_files);
+            "Positive Typecheck Tests", (Stdlib.List.map (fun name ->
+              test_case name `Quick (good_test typecheck_test name)) good_files); 
+          ]
+        else if String.equal argv.(1) "neg" then
+          [
+            "Excluded Negative Typecheck Tests", (Stdlib.List.map (fun name ->
+              test_case name `Quick (excl_test name)) excluded_bad_files);
+            "Negative Typecheck Tests", (Stdlib.List.map (fun name ->
+              test_case name `Quick (bad_test typecheck_test name)) bad_files); 
+          ]
+        else
+          failwith "help: test.exe [pos|neg]";
+      end
+    else
+      failwith "help: test.exe [pos|neg]";
+  in
+  run ~argv:[| "test" |] "Tests" tests
