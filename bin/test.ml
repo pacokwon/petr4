@@ -33,7 +33,11 @@ let main include_dir stf_tests_dir =
     let p4_file = Stdlib.Filename.remove_extension stf_file ^ ".p4" in
     match parse_file include_dir p4_file false with
     | `Ok p4_prog -> stf_alco_test stf_file p4_file p4_prog
-    | `Error e -> failwith ("petr4 couldn't parse the p4 prog" ^ p4_file))
+    | `Error e ->
+        let fail_alcotest () =
+          Alcotest.failf "petr4 couldn't parse the p4 prog: %s" p4_file
+        in
+        Alcotest.test_case (Filename.basename p4_file) `Quick fail_alcotest)
 
 let excl stf_tests_dir =
   get_stf_files stf_tests_dir
