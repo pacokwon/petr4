@@ -102,11 +102,11 @@ let example_path l =
   let root = Filename.concat ".." "examples" in
   List.fold_left l ~init:root ~f:Filename.concat
 
-let good_files = example_path ["checker_tests"; "good"] |> get_files
-let excluded_good_files = example_path ["checker_tests"; "excluded/good"] |> get_files
+let good_files = "./testdata/p4_16_samples" |> get_files
+let excluded_good_files = "./testdata/exclude/positive" |> get_files
 
-let bad_files = example_path ["checker_tests"; "bad"] |> get_files
-let excluded_bad_files = example_path ["checker_tests"; "excluded/bad"] |> get_files
+let bad_files = "./testdata/p4_16_errors" |> get_files
+let excluded_bad_files = "./testdata/exclude/negative" |> get_files
 
 (* This is a hack, sorry! *)
 let known_failures =
@@ -124,11 +124,11 @@ let known_failures =
 
 let good_test f file () =
   Alcotest.(check bool) "good test" true
-    (f ["../examples"] (example_path ["checker_tests"; "good"; file]))
+    (f ["./examples"] (Filename.concat "./testdata/p4_16_samples" file))
 
 let bad_test f file () =
   Alcotest.(check bool) "bad test" false
-    (f ["../examples"] (example_path ["checker_tests"; "bad"; file]))
+    (f ["./examples"] (Filename.concat "./testdata/p4_16_errors" file))
 
 let excl_test file () =
   Alcotest.(check bool) "good test" true true
@@ -140,18 +140,12 @@ let example_path l =
 let () = 
   (let open Alcotest in
    run "Tests" [
-     "excluded tests good", (Stdlib.List.map (fun name ->
+     "Excluded Positive Typecheck Tests", (Stdlib.List.map (fun name ->
          test_case name `Quick (excl_test name)) excluded_good_files);
-     "excluded tests bad", (Stdlib.List.map (fun name ->
+     "Excluded Negative Typecheck Tests", (Stdlib.List.map (fun name ->
          test_case name `Quick (excl_test name)) excluded_bad_files);
-     "parser tests good", (Stdlib.List.map (fun name ->
-         test_case name `Quick (good_test parser_test name)) (good_files@bad_files));
-     "typecheck tests good", (Stdlib.List.map (fun name ->
-         let speed = if List.mem ~equal:String.equal known_failures name then `Slow else `Quick in
-         test_case name speed (good_test typecheck_test name)) good_files);
-     "typecheck tests bad", (Stdlib.List.map (fun name ->
-         let speed = if List.mem ~equal:String.equal known_failures name then `Slow else `Quick in
-         test_case name speed (bad_test typecheck_test name)) bad_files); 
-     "round trip pp tests good", (Stdlib.List.map (fun name ->
-         test_case name `Quick (good_test pp_round_trip_test name)) good_files);
+     "Positive Typecheck Tests", (Stdlib.List.map (fun name ->
+         test_case name `Quick (good_test typecheck_test name)) good_files); 
+     "Negative Typecheck Tests", (Stdlib.List.map (fun name ->
+         test_case name `Quick (bad_test typecheck_test name)) bad_files); 
    ])

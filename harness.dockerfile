@@ -28,9 +28,9 @@ RUN opam init --disable-sandboxing -y && \
     dune build && \
     dune install
 
-RUN mv /petr4/testdata/ebpf-tests.tar.gz /petr4/testdata/v1model-tests.tar.gz . && \
-    tar xvzf ebpf-tests.tar.gz && \
-    tar xvzf v1model-tests.tar.gz
+RUN tar xvzf testdata/ebpf-tests.tar.gz -C testdata && \
+    tar xvzf testdata/v1model-tests.tar.gz -C testdata && \
+    tar xvzf testdata/typecheck.tar.gz -C testdata
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

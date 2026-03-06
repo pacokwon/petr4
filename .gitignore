@@ -25,3 +25,12 @@ testruns/
 .*.sw?
 .#*
 \#*
+
+testdata/v1model-tests/
+testdata/ebpf-tests/
+testdata/p4_16_samples/
+testdata/p4_16_errors/
+testdata/exclude/
+
+_opam
+.opam

@@ -54,12 +54,12 @@ let () =
       Array.sub argv ~pos:1 ~len:(Array.length argv - 1)
       |> Array.to_list
     else begin
-      print_endline "No argument supplied. Running tests in ./examples/checker_tests/good/";
-      ["./examples/checker_tests/good/"]
+      print_endline "No argument supplied. Running tests in ./testdata";
+      ["./testdata/v1model-tests"; "./testdata/ebpf-tests"]
     end
   in
   let test_suite =
-    List.map ~f:(fun testdir -> ("", main ["examples/"] testdir)) testdirs
+    List.map ~f:(fun testdir -> (testdir, main ["examples/"] testdir)) testdirs
   in
   test_suite
   |> Alcotest.run ~argv:[| "test" |] "Stf-tests"

@@ -49,6 +49,12 @@ test-stf:
 test:
 	cd test && dune exec -- ./test.exe
 
+sim:
+	dune exec bin/test.exe
+
+typecheck:
+	dune exec test/test.exe
+
 clean:
 	dune clean
 
