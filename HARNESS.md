@@ -18,12 +18,12 @@ docker exec -it petr4 bash
 ```
 
 ## Typecheck
-### Run Positive Tests
+Run positive tests against `p4_16_samples` from the p4c repository.
 ```bash
 make pos
 ```
 
-### Run Negative Tests
+Run negative tests against `p4_16_errors` from the p4c repository.
 ```bash
 make neg
 ```
