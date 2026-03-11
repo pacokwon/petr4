@@ -21,7 +21,7 @@ RUN apt-get update && \
 
 RUN opam init --disable-sandboxing -y && \
     eval $(opam env) && \
-    opam switch create 4.14.0 && \
+    opam switch create petr4 4.14.0 && \
     opam init --disable-sandboxing -y && \
     eval $(opam env) && \
     opam switch import petr4-013.export -y && \
