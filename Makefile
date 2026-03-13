@@ -49,17 +49,39 @@ test-stf:
 test:
 	cd test && dune exec -- ./test.exe
 
-sim-v1model:
-	dune exec bin/test.exe -- testdata/v1model-tests
+sim-p4c-v1model:
+	eval $(opam env)
+	mkdir -p /evaluation/p4c/petr4/dynamic
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4c/v1model/ | tee /evaluation/p4c/petr4/dynamic/v1model.log
+	@echo "Test log recorded in /evaluation/p4c/petr4/dynamic/v1model.log"
 
-sim-ebpf:
-	dune exec bin/test.exe -- testdata/ebpf-tests
+sim-p4c-ebpf:
+	eval $(opam env)
+	mkdir -p /evaluation/p4c/petr4/dynamic
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4c/ebpf/ | tee /evaluation/p4c/petr4/dynamic/ebpf.log
+	@echo "Test log recorded in /evaluation/p4c/petr4/dynamic/ebpf.log"
+
+sim-p4testgen-v1model:
+	eval $(opam env)
+	mkdir -p /evaluation/p4testgen/petr4/dynamic
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4testgen/v1model/ | tee /evaluation/p4testgen/petr4/dynamic/v1model.log
+	@echo "Test log recorded in /evaluation/p4testgen/petr4/dynamic/v1model.log"
+
+sim-p4testgen-ebpf:
+	eval $(opam env)
+	mkdir -p /evaluation/p4testgen/petr4/dynamic
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4testgen/ebpf/ | tee /evaluation/p4testgen/petr4/dynamic/ebpf.log
+	@echo "Test log recorded in /evaluation/p4testgen/petr4/dynamic/ebpf.log"
 
 pos:
-	dune exec test/test.exe -- pos
+	eval $(opam env)
+	mkdir -p /evaluation/p4c/petr4/static
+	ALCOTEST_COLOR=never dune exec test/test.exe -- pos | tee /evaluation/p4c/petr4/static/pos.log
 
 neg:
-	dune exec test/test.exe -- neg
+	eval $(opam env)
+	mkdir -p /evaluation/p4c/petr4/static
+	ALCOTEST_COLOR=never dune exec test/test.exe -- neg | tee /evaluation/p4c/petr4/static/neg.log
 
 clean:
 	dune clean
