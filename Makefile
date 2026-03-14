@@ -52,36 +52,36 @@ test:
 sim-p4c-v1model:
 	eval $(opam env)
 	mkdir -p /evaluation/p4c/petr4/dynamic
-	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4c/v1model/ | tee /evaluation/p4c/petr4/dynamic/v1model.log
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- -e testdata/excludes/dynamic.exclude testdata/p4c/v1model/ | tee /evaluation/p4c/petr4/dynamic/v1model.log
 	@echo "Test log recorded in /evaluation/p4c/petr4/dynamic/v1model.log"
 
 sim-p4c-ebpf:
 	eval $(opam env)
 	mkdir -p /evaluation/p4c/petr4/dynamic
-	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4c/ebpf/ | tee /evaluation/p4c/petr4/dynamic/ebpf.log
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- -e testdata/excludes/dynamic.exclude testdata/p4c/ebpf/ | tee /evaluation/p4c/petr4/dynamic/ebpf.log
 	@echo "Test log recorded in /evaluation/p4c/petr4/dynamic/ebpf.log"
 
 sim-p4testgen-v1model:
 	eval $(opam env)
 	mkdir -p /evaluation/p4testgen/petr4/dynamic
-	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4testgen/v1model/ | tee /evaluation/p4testgen/petr4/dynamic/v1model.log
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- -e testdata/excludes/dynamic.exclude testdata/p4testgen/v1model/ | tee /evaluation/p4testgen/petr4/dynamic/v1model.log
 	@echo "Test log recorded in /evaluation/p4testgen/petr4/dynamic/v1model.log"
 
 sim-p4testgen-ebpf:
 	eval $(opam env)
 	mkdir -p /evaluation/p4testgen/petr4/dynamic
-	ALCOTEST_COLOR=never dune exec bin/test.exe -- testdata/p4testgen/ebpf/ | tee /evaluation/p4testgen/petr4/dynamic/ebpf.log
+	ALCOTEST_COLOR=never dune exec bin/test.exe -- -e testdata/excludes/dynamic.exclude testdata/p4testgen/ebpf/ | tee /evaluation/p4testgen/petr4/dynamic/ebpf.log
 	@echo "Test log recorded in /evaluation/p4testgen/petr4/dynamic/ebpf.log"
 
 pos:
 	eval $(opam env)
 	mkdir -p /evaluation/p4c/petr4/static
-	ALCOTEST_COLOR=never dune exec test/test.exe -- pos | tee /evaluation/p4c/petr4/static/pos.log
+	ALCOTEST_COLOR=never dune exec test/test.exe -- -e testdata/excludes/positive.exclude -pos | tee /evaluation/p4c/petr4/static/pos.log
 
 neg:
 	eval $(opam env)
 	mkdir -p /evaluation/p4c/petr4/static
-	ALCOTEST_COLOR=never dune exec test/test.exe -- neg | tee /evaluation/p4c/petr4/static/neg.log
+	ALCOTEST_COLOR=never dune exec test/test.exe -- -e testdata/excludes/negative.exclude -neg | tee /evaluation/p4c/petr4/static/neg.log
 
 clean:
 	dune clean

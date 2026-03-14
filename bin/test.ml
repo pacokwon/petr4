@@ -25,41 +25,60 @@ let parse_file include_dirs p4_file verbose =
     if verbose then Format.eprintf "[%s] %s@\n%!" (Conf.red "Failed") p4_file;
     `Error (Lexer.info lexbuf, err)
 
+let read_exclusions excl_file =
+  In_channel.read_lines excl_file
+  |> List.map ~f:String.strip
+  |> List.filter ~f:(fun s -> not (String.is_empty s))
+  |> String.Set.of_list
 
-let main include_dir stf_tests_dir =
+let main include_dir exclusions stf_tests_dir =
   get_stf_files stf_tests_dir
   |> List.map ~f:(fun x ->
-    let stf_file = Filename.concat stf_tests_dir x in
-    let p4_file = Stdlib.Filename.remove_extension stf_file ^ ".p4" in
-    match parse_file include_dir p4_file false with
-    | `Ok p4_prog -> stf_alco_test stf_file p4_file p4_prog
-    | `Error e ->
-        let fail_alcotest () =
-          Alcotest.failf "petr4 couldn't parse the p4 prog: %s" p4_file
-        in
-        Alcotest.test_case (Filename.basename p4_file) `Quick fail_alcotest)
+         let stf_file = Filename.concat stf_tests_dir x in
+         let p4_file = Stdlib.Filename.remove_extension stf_file ^ ".p4" in
 
-let excl stf_tests_dir =
-  get_stf_files stf_tests_dir
-  |> List.map ~f:(fun x ->
-    let stf_file = Filename.concat stf_tests_dir x in
-    let p4_file = Stdlib.Filename.remove_extension stf_file ^ ".p4" in
-    (Alcotest.test_case p4_file `Quick
-      (fun () -> Alcotest.(check bool) p4_file true true)))
-
+         if Set.mem exclusions x then
+           Alcotest.test_case (Filename.basename p4_file) `Quick
+             (fun () -> Alcotest.skip ())
+         else
+           match parse_file include_dir p4_file false with
+           | `Ok p4_prog -> stf_alco_test stf_file p4_file p4_prog
+           | `Error _ ->
+               let fail_alcotest () =
+                 Alcotest.failf "petr4 couldn't parse the p4 prog: %s" p4_file
+               in
+               Alcotest.test_case (Filename.basename p4_file) `Quick fail_alcotest)
 let () =
-  let argv = Sys.get_argv () in
+  let excl_file = ref None in
+  let testdirs = ref [] in
+
+  let anon_fun s =
+    testdirs := !testdirs @ [ s ]
+  in
+  let speclist =
+    [
+      ("-e", Arg.String (fun s -> excl_file := Some s),
+       "Path to a file containing STF filenames to exclude, one per line");
+    ]
+  in
+  let usage = "test.exe [-e exclude_file] [testdir ...]" in
+  Arg.parse speclist anon_fun usage;
   let testdirs =
-    if Array.length argv > 1 then
-      Array.sub argv ~pos:1 ~len:(Array.length argv - 1)
-      |> Array.to_list
-    else begin
-      print_endline "No argument supplied. Running tests in ./testdata";
-      ["./testdata/v1model-tests"; "./testdata/ebpf-tests"]
-    end
+    if List.is_empty !testdirs then
+      begin
+        print_endline "No argument supplied. Running tests in ./testdata";
+        [ "./testdata/v1model-tests"; "./testdata/ebpf-tests" ]
+      end
+    else
+      !testdirs
+  in
+  let exclusions =
+    match !excl_file with
+    | None -> String.Set.empty
+    | Some path -> read_exclusions path
   in
   let test_suite =
-    List.map ~f:(fun testdir -> (testdir, main ["examples/"] testdir)) testdirs
+    List.map testdirs ~f:(fun testdir ->
+        (testdir, main [ "examples/" ] exclusions testdir))
   in
-  test_suite
-  |> Alcotest.run ~argv:[| "test" |] "Stf-tests"
+  Alcotest.run ~argv:[| "test" |] "Stf-tests" test_suite
