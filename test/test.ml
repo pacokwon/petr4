@@ -95,11 +95,35 @@ let get_files path =
   Sys_unix.ls_dir path
   |> List.filter ~f:(fun name -> Core.Filename.check_suffix name ".p4")
 
+let strip_known_extension s =
+  if String.is_suffix s ~suffix:".p4"
+  then Filename.chop_extension s
+  else if String.is_suffix s ~suffix:".stf"
+  then Filename.chop_extension s
+  else s
+
+let normalize_exclusion_entry s =
+  let base = Filename.basename s in
+  let stem = strip_known_extension base in
+  match String.rsplit2 stem ~on:'_' with
+  | Some (prefix, suffix) when String.for_all suffix ~f:Char.is_digit ->
+      String.Set.of_list
+        [ stem ^ ".p4"
+        ; prefix ^ "__" ^ suffix ^ ".p4"
+        ]
+  | _ ->
+      String.Set.singleton (stem ^ ".p4")
+
 let read_exclusions excl_file =
   In_channel.read_lines excl_file
   |> List.map ~f:String.strip
   |> List.filter ~f:(fun s -> not (String.is_empty s))
-  |> String.Set.of_list
+  |> List.map ~f:normalize_exclusion_entry
+  |> List.fold ~init:String.Set.empty ~f:Set.union
+
+let read_all_exclusions excl_files =
+  List.fold excl_files ~init:String.Set.empty ~f:(fun acc file ->
+      Set.union acc (read_exclusions file))
 
 let good_files = "./testdata/p4_16_samples" |> get_files
 let bad_files = "./testdata/p4_16_errors" |> get_files
@@ -142,35 +166,32 @@ let build_cases ~excluded files mk_test =
 
 let () =
   let open Alcotest in
-  let excl_file = ref None in
+  let excl_files = ref [] in
   let run_pos = ref false in
   let run_neg = ref false in
 
   let speclist =
     [
       ("-e",
-       Arg.String (fun s -> excl_file := Some s),
-       "File containing filenames to exclude (one per line)");
-
+       Arg.String (fun s -> excl_files := s :: !excl_files),
+       "File containing filenames to exclude (one per line); may be passed multiple times");
       ("-pos",
        Arg.Set run_pos,
        "Run positive tests");
-
       ("-neg",
        Arg.Set run_neg,
        "Run negative tests");
     ]
   in
 
-  let usage = "test.exe [-e exclude_file] [-pos|-neg]" in
+  let usage = "test.exe [-e exclude_file ...] [-pos|-neg]" in
   Arg.parse speclist (fun _ -> ()) usage;
+
   if (!run_pos && !run_neg) || (not !run_pos && not !run_neg) then
     failwith "Specify exactly one of -pos or -neg";
-  let excluded =
-    match !excl_file with
-    | None -> String.Set.empty
-    | Some path -> read_exclusions path
-  in
+
+  let excluded = read_all_exclusions !excl_files in
+
   let tests =
     if !run_pos then
       [
@@ -183,4 +204,5 @@ let () =
           build_cases ~excluded bad_files (bad_test typecheck_test) );
       ]
   in
+
   run ~argv:[| "test" |] "Tests" tests
