@@ -94,6 +94,7 @@ let typecheck_test (include_dirs : string list) (p4_file : string) : bool =
 let get_files path =
   Sys_unix.ls_dir path
   |> List.filter ~f:(fun name -> Core.Filename.check_suffix name ".p4")
+  |> List.map ~f:(Filename.concat path)
 
 let strip_known_extension s =
   if String.is_suffix s ~suffix:".p4"
@@ -102,31 +103,31 @@ let strip_known_extension s =
   then Filename.chop_extension s
   else s
 
-let normalize_exclusion_entry s =
-  let base = Filename.basename s in
-  let stem = strip_known_extension base in
-  match String.rsplit2 stem ~on:'_' with
-  | Some (prefix, suffix) when String.for_all suffix ~f:Char.is_digit ->
-      String.Set.of_list
-        [ stem ^ ".p4"
-        ; prefix ^ "__" ^ suffix ^ ".p4"
-        ]
-  | _ ->
-      String.Set.singleton (stem ^ ".p4")
+let normalize path =
+  match String.split path ~on:'/' with
+  | "testdata" :: dataset :: _ ->
+      Filename.concat ("testdata/" ^ dataset) (Filename.basename path)
+  | _ -> path
 
 let read_exclusions excl_file =
   In_channel.read_lines excl_file
-  |> List.map ~f:String.strip
+  |> List.map ~f:(fun s ->
+     let s = String.strip s in
+     Option.value (String.chop_prefix s ~prefix:"p4c/") ~default:s
+     |> normalize)
   |> List.filter ~f:(fun s -> not (String.is_empty s))
+  |> String.Set.of_list
+  (*
   |> List.map ~f:normalize_exclusion_entry
   |> List.fold ~init:String.Set.empty ~f:Set.union
+  *)
 
 let read_all_exclusions excl_files =
   List.fold excl_files ~init:String.Set.empty ~f:(fun acc file ->
       Set.union acc (read_exclusions file))
 
-let good_files = "./testdata/p4_16_samples" |> get_files
-let bad_files = "./testdata/p4_16_errors" |> get_files
+let good_files = "testdata/p4_16_samples" |> get_files
+let bad_files = "testdata/p4_16_errors" |> get_files
 
 (* This is a hack, sorry! *)
 let known_failures =
@@ -145,11 +146,11 @@ let known_failures =
 
 let good_test f file () =
   Alcotest.(check bool) "good test" true
-    (f ["./examples"] (Filename.concat "./testdata/p4_16_samples" file))
+    (f ["./examples"] file)
 
 let bad_test f file () =
   Alcotest.(check bool) "bad test" false
-    (f ["./examples"] (Filename.concat "./testdata/p4_16_errors" file))
+    (f ["./examples"] file)
 
 let excluded_test file () =
   Format.printf "Skipping excluded test: %s@." file;
@@ -205,4 +206,7 @@ let () =
       ]
   in
 
+  (*
+  ()
+  *)
   run ~argv:[| "test" |] "Tests" tests
