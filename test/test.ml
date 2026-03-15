@@ -117,10 +117,6 @@ let read_exclusions excl_file =
      |> normalize)
   |> List.filter ~f:(fun s -> not (String.is_empty s))
   |> String.Set.of_list
-  (*
-  |> List.map ~f:normalize_exclusion_entry
-  |> List.fold ~init:String.Set.empty ~f:Set.union
-  *)
 
 let read_all_exclusions excl_files =
   List.fold excl_files ~init:String.Set.empty ~f:(fun acc file ->
@@ -206,7 +202,4 @@ let () =
       ]
   in
 
-  (*
-  ()
-  *)
   run ~argv:[| "test" |] "Tests" tests
