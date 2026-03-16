@@ -57,13 +57,6 @@ module Make_parse (Conf: Parse_config) = struct
     let lexbuf = Lexing.from_string p4_string in
     Parser.p4program Lexer.lexer lexbuf 
 
-  let check_file' (include_dirs : string list) (p4_file : string) (verbose : bool) =
-    match parse_file include_dirs p4_file verbose with
-    | `Ok prog ->
-      let prog, renamer = Elaborate.elab prog in
-      `Ok (prog, Checker.check_program renamer prog)
-    | `Error e -> `Error e
-
   let print_json (pretty: bool) (json: Yojson.Safe.t) : unit =
     let s =
       if pretty
@@ -73,41 +66,36 @@ module Make_parse (Conf: Parse_config) = struct
     Format.printf "%s" s
 
   let check_file (include_dirs : string list) (p4_file : string)
-      (show_json : bool) (pretty_json : bool) (verbose : bool) : unit =
-    match check_file' include_dirs p4_file verbose with
-    | `Ok (parsed_prog, _) ->
-      if show_json
-      then parsed_prog |> Types.program_to_yojson |> print_json pretty_json
-      else parsed_prog |> Pretty.format_program |> print
-    | `Error (info, Lexer.Error s) ->
-      Format.eprintf "%s: %s@\n%!" (Info.to_string info) s
-    | `Error (info, Parser.Error) ->
-      Format.eprintf "%s: syntax error@\n%!" (Info.to_string info)
-    | `Error (info, err) ->
-      Format.eprintf "%s: %s@\n%!" (Info.to_string info) (Exn.to_string err)
+      (_show_json : bool) (_pretty_json : bool) (_verbose : bool) : bool =
+    match parse_file include_dirs p4_file false with
+    | `Ok prog ->
+        begin
+          try
+            let prog, renamer = Elaborate.elab prog in
+            let _ = Checker.check_program renamer prog in
+            true
+          with
+          | exn ->
+              Format.eprintf "Unknown exception: %s" (Exn.to_string exn);
+              false
+        end
+    | `Error (_, Lexer.Error _) -> false
+    | `Error (_, Parser.Error) -> false
+    | `Error (_, _) -> false
 
   let do_stf include_dir stf_file p4_file =
-    let print_err (e_port, e_pkt) (a_port, a_pkt) =
-      Printf.printf "Packet differed from the expected packet.\nExpected: port %s pkt %s\nActual:   port %s pkt %s\n\n"
-        e_port e_pkt a_port a_pkt
-    in
-    let print_ok (a_port, a_pkt) =
-      Printf.printf "Packet matched the expected packet.\nPacket:   port %s pkt %s\n\n"
-        a_port a_pkt
-    in
     let check_pkt (expected_pkt, actual_pkt) =
       if not (P4stf.Test.packet_equal expected_pkt actual_pkt)
-      then print_err expected_pkt actual_pkt
-      else print_ok actual_pkt
+      then false
+      else true
     in
     let verbose = false in
     match parse_file include_dir p4_file verbose with
     | `Ok p4prog -> 
        let expected, results = P4stf.Test.run_stf stf_file p4prog in
        let pkts = List.zip_exn expected results in
-       List.iter ~f:check_pkt pkts
-    | `Error err -> 
-       ()
+       List.fold_left ~init:true ~f:(fun acc (e, a) -> acc && check_pkt (e, a)) pkts
+    | `Error err -> false
        
   let eval_file include_dirs p4_file verbose pkt_str ctrl_json port target =
     let port = Bigint.of_int port in
