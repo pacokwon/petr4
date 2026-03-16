@@ -54,6 +54,8 @@ let parse_command =
       | `Error (info, exn) ->
          Format.eprintf "%s: %s@\n%!" (Info.to_string info) (Exn.to_string exn))
 
+(* 42 on success, 6 on failure *)
+
 let check_command =
   let open Command.Spec in
   Command.basic_spec
@@ -65,7 +67,7 @@ let check_command =
      +> flag "-pretty" no_arg ~doc:" Pretty-print JSON"
      +> anon ("p4file" %: string))
     (fun verbose include_dir json pretty p4file () ->
-       ignore (check_file include_dir p4file json pretty verbose))
+      if check_file include_dir p4file json pretty verbose then exit 42 else exit 6)
 
 let eval_command =
   let open Command.Spec in
@@ -82,6 +84,8 @@ let eval_command =
     (fun verbose include_dir pkt_str ctrl_json port target p4file () ->
        print_string (eval_file_string include_dir p4file verbose pkt_str (Yojson.Safe.from_file ctrl_json) (int_of_string port) target))
   
+(* 42 on success, 6 on failure *)
+
 let stf_command =
   let open Command.Spec in
   Command.basic_spec
@@ -92,7 +96,7 @@ let stf_command =
      +> flag "-stf" (required string) ~doc: "<stf file> Select the .stf script to run"
      +> anon ("p4file" %: string))
     (fun verbose include_dir stf_file p4_file () ->
-        do_stf include_dir stf_file p4_file)
+      if do_stf include_dir stf_file p4_file then exit 42 else exit 6)
 
 let command =
   Command.group
